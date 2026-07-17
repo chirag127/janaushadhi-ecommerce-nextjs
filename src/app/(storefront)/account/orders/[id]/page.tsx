@@ -37,6 +37,7 @@ export default async function OrderDetailPage({
 
   if (!data) notFound();
   const o = data as Order & { items: OrderItem[] };
+  const sa = o.shipping_address;
 
   return (
     <div className="space-y-6">
@@ -64,14 +65,16 @@ export default async function OrderDetailPage({
           <div className="mb-4 grid gap-2 text-sm sm:grid-cols-2">
             <div>
               <p className="text-muted-foreground">Payment method</p>
-              <p className="uppercase">{o.payment_method}</p>
+              <p className="uppercase">
+                {sa?._payment_method === "razorpay" ? "ONLINE" : "COD"}
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground">Shipping address</p>
               <p>
-                {o.shipping_name}, {o.shipping_line1}
-                {o.shipping_line2 ? `, ${o.shipping_line2}` : ""},{" "}
-                {o.shipping_city}, {o.shipping_state} – {o.shipping_pincode}
+                {sa?.full_name}, {sa?.line1}
+                {sa?.line2 ? `, ${sa.line2}` : ""},{" "}
+                {sa?.city}, {sa?.state} – {sa?.pincode}
               </p>
             </div>
           </div>
@@ -102,14 +105,14 @@ export default async function OrderDetailPage({
             </div>
             {o.discount > 0 && (
               <div className="flex justify-between text-primary">
-                <span>Discount {o.coupon_code ? `(${o.coupon_code})` : ""}</span>
+                <span>Discount</span>
                 <span>−{formatPrice(o.discount)}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
               <span>
-                {o.shipping_fee === 0 ? "Free" : formatPrice(o.shipping_fee)}
+                {o.shipping === 0 ? "Free" : formatPrice(o.shipping)}
               </span>
             </div>
             <div className="flex justify-between border-t pt-2 text-base font-bold">

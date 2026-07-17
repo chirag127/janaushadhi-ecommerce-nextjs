@@ -27,6 +27,7 @@ export default async function AdminOrderDetailPage({
 
   if (!data) notFound();
   const o = data as Order & { items: OrderItem[] };
+  const sa = o.shipping_address;
 
   return (
     <div className="space-y-6">
@@ -62,8 +63,7 @@ export default async function AdminOrderDetailPage({
                   <div className="flex-1">
                     <p className="text-sm font-medium">{it.product_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      #{it.drug_code} · {it.quantity} ×{" "}
-                      {formatPrice(it.unit_price)}
+                      {it.quantity} × {formatPrice(it.unit_price)}
                     </p>
                   </div>
                   <span className="font-medium">
@@ -79,14 +79,14 @@ export default async function AdminOrderDetailPage({
               </div>
               {o.discount > 0 && (
                 <div className="flex justify-between text-primary">
-                  <span>Discount {o.coupon_code && `(${o.coupon_code})`}</span>
+                  <span>Discount</span>
                   <span>−{formatPrice(o.discount)}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shipping</span>
                 <span>
-                  {o.shipping_fee === 0 ? "Free" : formatPrice(o.shipping_fee)}
+                  {o.shipping === 0 ? "Free" : formatPrice(o.shipping)}
                 </span>
               </div>
               <div className="flex justify-between border-t pt-2 text-base font-bold">
@@ -102,18 +102,20 @@ export default async function AdminOrderDetailPage({
             <CardTitle>Shipping</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <p className="font-medium">{o.shipping_name}</p>
-            <p className="text-muted-foreground">{o.shipping_phone}</p>
+            <p className="font-medium">{sa?.full_name}</p>
+            <p className="text-muted-foreground">{sa?.phone}</p>
             <p className="text-muted-foreground">
-              {o.shipping_line1}
-              {o.shipping_line2 ? `, ${o.shipping_line2}` : ""}
+              {sa?.line1}
+              {sa?.line2 ? `, ${sa.line2}` : ""}
             </p>
             <p className="text-muted-foreground">
-              {o.shipping_city}, {o.shipping_state} – {o.shipping_pincode}
+              {sa?.city}, {sa?.state} – {sa?.pincode}
             </p>
             <p className="pt-2">
               <span className="text-muted-foreground">Payment: </span>
-              <span className="uppercase">{o.payment_method}</span>
+              <span className="uppercase">
+                {sa?._payment_method === "razorpay" ? "ONLINE" : "COD"}
+              </span>
             </p>
           </CardContent>
         </Card>

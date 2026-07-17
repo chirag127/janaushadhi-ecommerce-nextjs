@@ -80,9 +80,9 @@ export function CouponsManager({ coupons }: { coupons: Coupon[] }) {
                   <Select
                     id="discount_type"
                     name="discount_type"
-                    defaultValue={editing?.discount_type ?? "percentage"}
+                    defaultValue={editing?.discount_type ?? "percent"}
                   >
-                    <option value="percentage">Percentage (%)</option>
+                    <option value="percent">Percentage (%)</option>
                     <option value="fixed">Fixed (₹)</option>
                   </Select>
                 </div>
@@ -112,14 +112,14 @@ export function CouponsManager({ coupons }: { coupons: Coupon[] }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="max_discount">Max discount (₹)</Label>
+                  <Label htmlFor="max_discount_amount">Max discount (₹)</Label>
                   <Input
-                    id="max_discount"
-                    name="max_discount"
+                    id="max_discount_amount"
+                    name="max_discount_amount"
                     type="number"
                     step="0.01"
                     min="0"
-                    defaultValue={editing?.max_discount ?? ""}
+                    defaultValue={editing?.max_discount_amount ?? ""}
                   />
                 </div>
               </div>
@@ -203,7 +203,7 @@ export function CouponsManager({ coupons }: { coupons: Coupon[] }) {
                 <tr key={c.id} className="hover:bg-accent/30">
                   <td className="p-3 font-mono font-medium">{c.code}</td>
                   <td className="p-3">
-                    {c.discount_type === "percentage"
+                    {c.discount_type === "percent"
                       ? `${c.discount_value}%`
                       : formatPrice(c.discount_value)}
                   </td>

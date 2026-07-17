@@ -1,0 +1,12 @@
+# Standalone workspace root — isolates this app from the parent monorepo's
+# pnpm workspace so installs and `pnpm build` resolve against this dir.
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+# @insforge/sdk was published recently; exempt it from the global
+# minimum-release-age supply-chain policy (matches the sibling storefronts).
+minimumReleaseAgeExclude:
+  - '@insforge/sdk@1.4.5'
+# Skip pnpm's pre-run install verification (it re-triggers install on build).
+verifyDepsBeforeRun: false

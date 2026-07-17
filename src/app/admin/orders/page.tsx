@@ -84,7 +84,7 @@ export default async function AdminOrdersPage({
               orders.map((o) => (
                 <tr key={o.id} className="hover:bg-accent/30">
                   <td className="p-3 font-medium">{o.order_number}</td>
-                  <td className="p-3">{o.shipping_name}</td>
+                  <td className="p-3">{o.shipping_address?.full_name}</td>
                   <td className="p-3 text-muted-foreground">
                     {formatDate(o.created_at)}
                   </td>

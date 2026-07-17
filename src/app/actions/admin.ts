@@ -164,7 +164,7 @@ export async function upsertCoupon(_prev: unknown, formData: FormData) {
     discount_type: formData.get("discount_type"),
     discount_value: formData.get("discount_value"),
     min_order_amount: formData.get("min_order_amount") || 0,
-    max_discount: formData.get("max_discount") || undefined,
+    max_discount_amount: formData.get("max_discount_amount") || undefined,
     usage_limit: formData.get("usage_limit") || undefined,
     expires_at: formData.get("expires_at") || undefined,
     is_active: formData.get("is_active") === "on",
@@ -177,7 +177,7 @@ export async function upsertCoupon(_prev: unknown, formData: FormData) {
     discount_type: parsed.data.discount_type,
     discount_value: parsed.data.discount_value,
     min_order_amount: parsed.data.min_order_amount,
-    max_discount: parsed.data.max_discount ?? null,
+    max_discount_amount: parsed.data.max_discount_amount ?? null,
     usage_limit: parsed.data.usage_limit ?? null,
     expires_at: parsed.data.expires_at
       ? new Date(parsed.data.expires_at).toISOString()

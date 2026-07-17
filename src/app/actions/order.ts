@@ -9,10 +9,11 @@ import type { CartItemWithProduct, Coupon } from "@/lib/types";
 function computeDiscount(coupon: Coupon, subtotal: number): number {
   if (subtotal < coupon.min_order_amount) return 0;
   let d =
-    coupon.discount_type === "percentage"
+    coupon.discount_type === "percent"
       ? (subtotal * coupon.discount_value) / 100
       : coupon.discount_value;
-  if (coupon.max_discount != null) d = Math.min(d, coupon.max_discount);
+  if (coupon.max_discount_amount != null)
+    d = Math.min(d, coupon.max_discount_amount);
   return Math.min(Math.round(d * 100) / 100, subtotal);
 }
 
@@ -117,34 +118,54 @@ export async function placeOrder(_prev: unknown, formData: FormData) {
   const shipping = computeShipping(subtotal);
   const total = Math.max(0, subtotal - discount) + shipping;
 
-  // Razorpay is not configured backend-side yet, so all orders are placed as
-  // Cash on Delivery. When Razorpay keys are configured (see checkout note),
-  // wire insforge.payments.razorpay.createOrder() here and drive Checkout.js
-  // on the client; fulfillment must come from verified payments.webhook_events
-  // rows, not from this success path.
-  const effectivePaymentMethod = paymentMethod === "razorpay" ? "cod" : paymentMethod;
+  // Resolve the applied coupon id (schema stores coupon_id, not a code string).
+  let couponId: string | null = null;
+  if (appliedCode) {
+    const { data: cRow } = await insforge.database
+      .from("coupons")
+      .select("id")
+      .eq("code", appliedCode)
+      .maybeSingle();
+    couponId = (cRow as { id: string } | null)?.id ?? null;
+  }
 
-  // Create order
+  // Razorpay is not configured backend-side yet (placeholder keys), so all
+  // orders are finalized as Cash on Delivery. When Razorpay keys are set via
+  // `npx @insforge/cli payments razorpay config set`, wire
+  // insforge.payments.razorpay.createOrder() here and drive Checkout.js on the
+  // client; fulfillment must then come from verified webhook events, not this
+  // success path. The chosen method is snapshotted into shipping_address jsonb
+  // (matching the shared backend used by the sibling storefronts).
+  const chosenMethod: "cod" | "razorpay" =
+    paymentMethod === "cod" ? "cod" : "razorpay";
+
+  // Create order — jsonb shipping_address holds the address snapshot + method.
   const { data: order, error: orderErr } = await insforge.database
     .from("orders")
     .insert([
       {
         order_number: generateOrderNumber(),
         user_id: user.id,
+        status: "processing",
+        payment_status: "pending",
         subtotal,
         discount,
-        shipping_fee: shipping,
+        shipping,
         total,
-        coupon_code: appliedCode,
-        shipping_name: addr.full_name,
-        shipping_phone: addr.phone,
-        shipping_line1: addr.line1,
-        shipping_line2: addr.line2,
-        shipping_city: addr.city,
-        shipping_state: addr.state,
-        shipping_pincode: addr.pincode,
-        payment_method: effectivePaymentMethod,
-        status: "pending",
+        currency: "INR",
+        coupon_id: couponId,
+        shipping_address: {
+          full_name: addr.full_name,
+          phone: addr.phone,
+          line1: addr.line1,
+          line2: addr.line2,
+          city: addr.city,
+          state: addr.state,
+          pincode: addr.pincode,
+          country: "India",
+          _payment_method: chosenMethod,
+        },
+        is_test_payment: false,
       },
     ])
     .select("id, order_number")
@@ -152,14 +173,14 @@ export async function placeOrder(_prev: unknown, formData: FormData) {
   if (orderErr || !order) return { error: orderErr?.message || "Order failed" };
   const createdOrder = order as { id: string; order_number: string };
 
-  // Insert order items (snapshot)
+  // Insert order items (snapshot). Jan Aushadhi sells at MRP → unit = mrp.
   const orderItems = items.map((it) => ({
     order_id: createdOrder.id,
     product_id: it.product.id,
     product_name: it.product.name,
-    drug_code: it.product.drug_code,
     unit_price: it.product.mrp,
     quantity: it.quantity,
+    line_total: it.product.mrp * it.quantity,
   }));
   const { error: itemsErr } = await insforge.database
     .from("order_items")

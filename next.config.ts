@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const insforgeHost = (() => {
   try {
@@ -12,6 +13,9 @@ const insforgeHost = (() => {
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // This app lives inside a parent pnpm workspace; pin the tracing root to the
+  // project dir so Next doesn't infer the monorepo root and bundle foreign chunks.
+  outputFileTracingRoot: path.join(__dirname),
   images: {
     remotePatterns: [
       ...(insforgeHost

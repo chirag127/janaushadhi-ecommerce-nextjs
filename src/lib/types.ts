@@ -119,6 +119,8 @@ export interface ShippingAddress {
   state: string;
   pincode: string;
   country?: string | null;
+  /** Payment method chosen at checkout, snapshotted into the order's jsonb. */
+  _payment_method?: "cod" | "razorpay";
 }
 
 export interface Order {

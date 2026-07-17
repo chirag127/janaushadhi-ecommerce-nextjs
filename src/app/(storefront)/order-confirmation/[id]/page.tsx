@@ -36,6 +36,7 @@ export default async function OrderConfirmationPage({
 
   if (!order) notFound();
   const o = order as Order & { items: OrderItem[] };
+  const sa = o.shipping_address;
 
   return (
     <div className="container max-w-2xl py-12">
@@ -65,14 +66,16 @@ export default async function OrderConfirmationPage({
           </div>
           <div>
             <p className="text-muted-foreground">Payment</p>
-            <p className="uppercase">{o.payment_method}</p>
+            <p className="uppercase">
+              {sa?._payment_method === "razorpay" ? "ONLINE" : "COD"}
+            </p>
           </div>
           <div className="sm:col-span-2">
             <p className="text-muted-foreground">Shipping to</p>
             <p>
-              {o.shipping_name}, {o.shipping_line1}
-              {o.shipping_line2 ? `, ${o.shipping_line2}` : ""},{" "}
-              {o.shipping_city}, {o.shipping_state} – {o.shipping_pincode}
+              {sa?.full_name}, {sa?.line1}
+              {sa?.line2 ? `, ${sa.line2}` : ""},{" "}
+              {sa?.city}, {sa?.state} – {sa?.pincode}
             </p>
           </div>
         </div>
@@ -112,7 +115,7 @@ export default async function OrderConfirmationPage({
           <div className="flex justify-between">
             <span className="text-muted-foreground">Shipping</span>
             <span>
-              {o.shipping_fee === 0 ? "Free" : formatPrice(o.shipping_fee)}
+              {o.shipping === 0 ? "Free" : formatPrice(o.shipping)}
             </span>
           </div>
           <div className="flex justify-between border-t pt-2 text-base font-bold">

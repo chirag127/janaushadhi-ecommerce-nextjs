@@ -56,10 +56,10 @@ export const categorySchema = z.object({
 
 export const couponSchema = z.object({
   code: z.string().min(3, "Code is required").toUpperCase(),
-  discount_type: z.enum(["percentage", "fixed"]),
+  discount_type: z.enum(["percent", "fixed"]),
   discount_value: z.coerce.number().min(0),
   min_order_amount: z.coerce.number().min(0).default(0),
-  max_discount: z.coerce.number().min(0).optional(),
+  max_discount_amount: z.coerce.number().min(0).optional(),
   usage_limit: z.coerce.number().int().min(0).optional(),
   expires_at: z.string().optional(),
   is_active: z.boolean().optional(),
