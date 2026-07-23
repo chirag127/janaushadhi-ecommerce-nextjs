@@ -7,8 +7,6 @@ import { startOAuth } from "@/app/actions/auth";
 const PROVIDERS = [
   { key: "google", label: "Google" },
   { key: "github", label: "GitHub" },
-  { key: "microsoft", label: "Microsoft" },
-  { key: "facebook", label: "Facebook" },
 ] as const;
 
 export function OAuthButtons() {
