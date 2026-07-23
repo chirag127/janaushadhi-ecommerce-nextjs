@@ -11,6 +11,29 @@ import { loginSchema, registerSchema } from "@/lib/validations";
 
 export type ActionState = { error?: string; success?: string } | null;
 
+/**
+ * Start an OAuth sign-in. Returns the provider URL to redirect to (client does
+ * the redirect). InsForge links the same email across providers automatically.
+ */
+export async function startOAuth(
+  provider: string,
+  next: string,
+): Promise<{ url?: string; error?: string }> {
+  try {
+    const insforge = await createInsForgeAuthClient();
+    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    const { data, error } = await insforge.auth.signInWithOAuth(provider, {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      additionalParams: { prompt: "select_account" },
+      skipBrowserRedirect: true,
+    });
+    if (error || !data?.url) return { error: error?.message ?? "OAuth unavailable" };
+    return { url: data.url };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "OAuth failed" };
+  }
+}
+
 export async function signIn(
   _prev: ActionState,
   formData: FormData

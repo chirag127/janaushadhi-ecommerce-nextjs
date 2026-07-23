@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { signIn, type ActionState } from "@/app/actions/auth";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export function LoginForm() {
   const params = useSearchParams();
@@ -18,7 +19,9 @@ export function LoginForm() {
   );
 
   return (
-    <form action={formAction} className="space-y-4">
+    <div className="space-y-4">
+      <OAuthButtons />
+      <form action={formAction} className="space-y-4">
       <input type="hidden" name="redirect" value={redirectTo} />
 
       {state?.error && (
@@ -57,5 +60,6 @@ export function LoginForm() {
 
       <SubmitButton className="w-full">Sign In</SubmitButton>
     </form>
+    </div>
   );
 }

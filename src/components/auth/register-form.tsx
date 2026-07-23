@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { signUp, type ActionState } from "@/app/actions/auth";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export function RegisterForm() {
   const [state, formAction] = useActionState<ActionState, FormData>(
@@ -14,7 +15,9 @@ export function RegisterForm() {
   );
 
   return (
-    <form action={formAction} className="space-y-4">
+    <div className="space-y-4">
+      <OAuthButtons />
+      <form action={formAction} className="space-y-4">
       {state?.error && (
         <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           <AlertCircle className="h-4 w-4" /> {state.error}
@@ -48,5 +51,6 @@ export function RegisterForm() {
 
       <SubmitButton className="w-full">Create Account</SubmitButton>
     </form>
+    </div>
   );
 }
