@@ -99,6 +99,12 @@ export async function placeOrder(_prev: unknown, formData: FormData) {
   );
   if (items.length === 0) return { error: "Your cart is empty" };
 
+  const onRequestItem = items.find((it) => !it.product.price || it.product.price <= 0);
+  if (onRequestItem)
+    return {
+      error: `${onRequestItem.product.name} is available on request only — please contact us to order it.`,
+    };
+
   const subtotal = items.reduce(
     (sum, it) => sum + it.product.mrp * it.quantity,
     0

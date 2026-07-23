@@ -18,6 +18,7 @@ export function ProductCard({
   inWishlist?: boolean;
 }) {
   const outOfStock = product.stock <= 0;
+  const onRequest = !product.price || product.price <= 0;
 
   return (
     <Card className="group flex flex-col overflow-hidden transition-shadow hover:shadow-md">
@@ -62,18 +63,29 @@ export function ProductCard({
             #{product.drug_code}
           </span>
         </div>
-        <p className="text-lg font-bold text-primary">
-          {formatPrice(product.mrp)}
-        </p>
+        {onRequest ? (
+          <p className="text-sm font-semibold text-primary">Available on request</p>
+        ) : (
+          <p className="text-lg font-bold text-primary">{formatPrice(product.price)}</p>
+        )}
 
         <div className="mt-1 flex items-center gap-2">
-          <AddToCartButton
-            productId={product.id}
-            isAuthed={isAuthed}
-            size="sm"
-            className="flex-1"
-            label="Add"
-          />
+          {onRequest ? (
+            <Link
+              href={`/contact?product=${encodeURIComponent(product.name)}`}
+              className="flex-1 rounded-md border border-primary px-3 py-1.5 text-center text-xs font-medium text-primary hover:bg-primary/10"
+            >
+              Request
+            </Link>
+          ) : (
+            <AddToCartButton
+              productId={product.id}
+              isAuthed={isAuthed}
+              size="sm"
+              className="flex-1"
+              label="Add"
+            />
+          )}
           <WishlistButton
             productId={product.id}
             isAuthed={isAuthed}

@@ -151,9 +151,13 @@ export default async function ProductDetailPage({
             </span>
           </div>
 
-          <p className="text-3xl font-bold text-primary">
-            {formatPrice(product.mrp)}
-          </p>
+          {!product.price || product.price <= 0 ? (
+            <p className="text-2xl font-bold text-primary">Available on request</p>
+          ) : (
+            <p className="text-3xl font-bold text-primary">
+              {formatPrice(product.price)}
+            </p>
+          )}
 
           {product.unit_size && (
             <p className="text-sm text-muted-foreground">
@@ -170,11 +174,20 @@ export default async function ProductDetailPage({
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <ProductPurchase
-              productId={product.id}
-              isAuthed={isAuthed}
-              maxStock={product.stock}
-            />
+            {!product.price || product.price <= 0 ? (
+              <Link
+                href={`/contact?product=${encodeURIComponent(product.name)}`}
+                className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Request this medicine
+              </Link>
+            ) : (
+              <ProductPurchase
+                productId={product.id}
+                isAuthed={isAuthed}
+                maxStock={product.stock}
+              />
+            )}
             <WishlistButton
               productId={product.id}
               isAuthed={isAuthed}

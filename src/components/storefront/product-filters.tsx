@@ -101,6 +101,17 @@ export function ProductFilters({
         </Button>
       </form>
 
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={params.get("onRequest") === "0"}
+          onChange={(e) =>
+            update({ onRequest: e.target.checked ? "0" : undefined })
+          }
+        />
+        <span>Exclude &quot;on request&quot; items</span>
+      </label>
+
       <Button variant="outline" size="sm" className="w-full" onClick={clearAll}>
         Clear filters
       </Button>

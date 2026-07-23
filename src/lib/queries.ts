@@ -9,6 +9,7 @@ export interface ProductQuery {
   maxPrice?: number;
   sort?: "newest" | "price_asc" | "price_desc" | "name";
   featured?: boolean;
+  excludeOnRequest?: boolean;
   page?: number;
   pageSize?: number;
 }
@@ -78,6 +79,7 @@ export async function getProducts(query: ProductQuery) {
     builder = builder.gte("mrp", query.minPrice);
   if (typeof query.maxPrice === "number")
     builder = builder.lte("mrp", query.maxPrice);
+  if (query.excludeOnRequest) builder = builder.gt("price", 0);
 
   if (query.category) {
     const cat = await getCategoryBySlug(query.category);

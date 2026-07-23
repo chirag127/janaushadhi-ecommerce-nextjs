@@ -23,6 +23,7 @@ type SearchParams = Promise<{
   minPrice?: string;
   maxPrice?: string;
   featured?: string;
+  onRequest?: string;
   page?: string;
 }>;
 
@@ -42,6 +43,7 @@ export default async function ProductsPage({
         sort: (sp.sort as "newest") ?? "newest",
         minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
         maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
+        excludeOnRequest: sp.onRequest === "0",
         featured: sp.featured === "1",
         page,
       }),
