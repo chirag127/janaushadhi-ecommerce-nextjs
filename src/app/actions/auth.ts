@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import {
   createInsForgeAuthActions,
   createInsForgeAuthClient,
@@ -28,6 +29,17 @@ export async function startOAuth(
       skipBrowserRedirect: true,
     });
     if (error || !data?.url) return { error: error?.message ?? "OAuth unavailable" };
+    // Bridge the PKCE verifier to the callback route via a short-lived
+    // httpOnly cookie (SameSite=Lax survives the provider redirect back).
+    if (data.codeVerifier) {
+      (await cookies()).set("insforge_code_verifier", data.codeVerifier, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 600,
+      });
+    }
     return { url: data.url };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "OAuth failed" };
