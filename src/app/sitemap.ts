@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetProductSlugs, dbGetCategories } from "@/lib/db/repository";
 import { siteConfig } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -19,18 +19,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: path === "" ? 1 : 0.7,
   }));
 
-  const insforge = await createClient();
-  const [{ data: products }, { data: categories }] = await Promise.all([
-    insforge.database
-      .from("products")
-      .select("slug, updated_at")
-      .eq("is_active", true)
-      .limit(5000),
-    insforge.database.from("categories").select("slug"),
+  const [productsRes, catsRes] = await Promise.all([
+    dbGetProductSlugs(),
+    dbGetCategories(),
   ]);
 
   const productRoutes: MetadataRoute.Sitemap = (
-    (products ?? []) as { slug: string; updated_at: string | null }[]
+    (productsRes.data ?? []) as { slug: string; updated_at: Date | null }[]
   ).map((p) => ({
     url: `${base}/products/${p.slug}`,
     lastModified: p.updated_at ? new Date(p.updated_at) : new Date(),
@@ -39,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const categoryRoutes: MetadataRoute.Sitemap = (
-    (categories ?? []) as { slug: string }[]
+    (catsRes.data ?? []) as { slug: string }[]
   ).map((c) => ({
     url: `${base}/products?category=${c.slug}`,
     changeFrequency: "weekly",

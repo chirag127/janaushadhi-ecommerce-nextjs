@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/insforge/server";
+import { getSessionUser } from "@/lib/db/auth-stub";
+import { dbGetCart } from "@/lib/db/repository";
 import { computeShipping } from "@/lib/utils";
 import type { CartItemWithProduct } from "@/lib/types";
 
@@ -11,34 +12,14 @@ export interface CartSummary {
 }
 
 export async function getCart(): Promise<CartSummary> {
-  const empty: CartSummary = {
-    items: [],
-    subtotal: 0,
-    shipping: 0,
-    total: 0,
-    count: 0,
-  };
-  const insforge = await createClient();
-  const {
-    data: { user },
-  } = await insforge.auth.getCurrentUser();
+  const empty: CartSummary = { items: [], subtotal: 0, shipping: 0, total: 0, count: 0 };
+  const user = await getSessionUser();
   if (!user) return empty;
 
-  const { data } = await insforge.database
-    .from("cart_items")
-    .select("*, product:products(*)")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  const items = ((data ?? []) as CartItemWithProduct[]).filter(
-    (it) => it.product
-  );
-  const subtotal = items.reduce(
-    (s, it) => s + it.product.mrp * it.quantity,
-    0
-  );
+  const { data } = await dbGetCart(user.id);
+  const items = (data ?? []).filter((it) => it.product);
+  const subtotal = items.reduce((s, it) => s + it.product.mrp * it.quantity, 0);
   const shipping = computeShipping(subtotal);
   const count = items.reduce((s, it) => s + it.quantity, 0);
-
   return { items, subtotal, shipping, total: subtotal + shipping, count };
 }

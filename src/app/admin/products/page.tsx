@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ProductsManager } from "@/components/admin/products-manager";
 import { Pagination } from "@/components/storefront/pagination";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetProductsForAdmin, dbGetCategories } from "@/lib/db/repository";
 import type { Category, Product } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Manage Products" };
@@ -16,36 +16,22 @@ export default async function AdminProductsPage({
 }) {
   const sp = await searchParams;
   const page = Number(sp.page) || 1;
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
 
-  const insforge = await createClient();
-
-  let builder = insforge.database
-    .from("products")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false });
-  if (sp.q) builder = builder.ilike("name", `%${sp.q}%`);
-
-  const [{ data, count }, { data: cats }] = await Promise.all([
-    builder.range(from, to),
-    insforge.database.from("categories").select("*").order("name"),
+  const [productsRes, catsRes] = await Promise.all([
+    dbGetProductsForAdmin({ q: sp.q, page, pageSize: PAGE_SIZE }),
+    dbGetCategories(),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil((productsRes.count ?? 0) / PAGE_SIZE));
 
   return (
     <div>
       <ProductsManager
-        products={(data ?? []) as Product[]}
-        categories={(cats ?? []) as Category[]}
-        total={count ?? 0}
+        products={(productsRes.data ?? []) as Product[]}
+        categories={(catsRes.data ?? []) as Category[]}
+        total={productsRes.count ?? 0}
       />
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        baseParams={{ q: sp.q }}
-      />
+      <Pagination page={page} totalPages={totalPages} baseParams={{ q: sp.q }} />
     </div>
   );
 }

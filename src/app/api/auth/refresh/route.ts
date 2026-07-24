@@ -1,7 +1,9 @@
-import { createRefreshAuthRouter } from "@insforge/sdk/ssr";
-
 /**
- * Browser access-token refresh endpoint. The InsForge SSR browser client
- * calls POST /api/auth/refresh when its access token is missing / expired.
+ * Token refresh endpoint — stub pending Better Auth.
+ * Returns 204 (no content) until the real session refresh is wired.
  */
-export const { POST } = createRefreshAuthRouter();
+import { NextResponse } from "next/server";
+
+export async function POST() {
+  return new NextResponse(null, { status: 204 });
+}

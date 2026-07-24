@@ -5,7 +5,7 @@ import { CheckCircle2, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetOrderWithItems } from "@/lib/db/repository";
 import { getUser } from "@/lib/auth";
 import { formatPrice, formatDate } from "@/lib/utils";
 import type { Order, OrderItem } from "@/lib/types";
@@ -17,24 +17,14 @@ export const metadata: Metadata = {
 
 type Params = Promise<{ id: string }>;
 
-export default async function OrderConfirmationPage({
-  params,
-}: {
-  params: Params;
-}) {
+export default async function OrderConfirmationPage({ params }: { params: Params }) {
   const { id } = await params;
   const user = await getUser();
   if (!user) notFound();
 
-  const insforge = await createClient();
-  const { data: order } = await insforge.database
-    .from("orders")
-    .select("*, items:order_items(*)")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
+  const { data: order } = await dbGetOrderWithItems(id, user.id);
   if (!order) notFound();
+
   const o = order as Order & { items: OrderItem[] };
   const sa = o.shipping_address;
 

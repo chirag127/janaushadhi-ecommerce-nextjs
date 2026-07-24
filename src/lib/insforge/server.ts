@@ -1,15 +1,14 @@
-import { cookies } from "next/headers";
-import { createServerClient } from "@insforge/sdk/ssr";
-
 /**
- * Server InsForge client for Server Components, Route Handlers and
- * Server Actions. Reads the access-token cookie and passes it as the
- * per-request bearer token; the refresh token stays server-owned.
+ * Server auth stub — replaces the former InsForge server client.
+ * Returns a minimal object whose .auth.getCurrentUser() always resolves to
+ * { data: { user: null } } until Better Auth is wired.
  *
- * Uses the Next.js 15 async cookies() API.
+ * DB access is gone — use src/lib/db/repository directly instead.
  */
 export async function createClient() {
-  return createServerClient({
-    cookies: await cookies(),
-  });
+  return {
+    auth: {
+      getCurrentUser: async () => ({ data: { user: null } }),
+    },
+  };
 }

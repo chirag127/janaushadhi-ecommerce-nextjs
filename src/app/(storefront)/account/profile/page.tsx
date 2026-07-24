@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProfileForm } from "@/components/account/profile-form";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetProfileField } from "@/lib/db/repository";
 import { getUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -11,12 +11,7 @@ export const metadata: Metadata = {
 
 export default async function ProfilePage() {
   const user = await getUser();
-  const insforge = await createClient();
-  const { data: profile } = await insforge.database
-    .from("profiles")
-    .select("full_name, phone")
-    .eq("id", user!.id)
-    .single();
+  const { data: profile } = await dbGetProfileField(user!.id, ["full_name", "phone"]);
 
   return (
     <div>

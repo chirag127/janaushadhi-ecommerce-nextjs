@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/storefront/pagination";
 import { InventoryManager } from "@/components/admin/inventory-manager";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetInventory } from "@/lib/db/repository";
 import type { Product } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Inventory" };
@@ -18,19 +18,12 @@ export default async function AdminInventoryPage({
 }) {
   const sp = await searchParams;
   const page = Number(sp.page) || 1;
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
 
-  const insforge = await createClient();
-  let builder = insforge.database
-    .from("products")
-    .select("*", { count: "exact" })
-    .order("stock", { ascending: true });
-
-  if (sp.filter === "low") builder = builder.lte("stock", 10).gt("stock", 0);
-  if (sp.filter === "out") builder = builder.lte("stock", 0);
-
-  const { data, count } = await builder.range(from, to);
+  const { data, count } = await dbGetInventory({
+    filter: sp.filter,
+    page,
+    pageSize: PAGE_SIZE,
+  });
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
   return (
@@ -59,11 +52,7 @@ export default async function AdminInventoryPage({
 
       <InventoryManager products={(data ?? []) as Product[]} />
 
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        baseParams={{ filter: sp.filter }}
-      />
+      <Pagination page={page} totalPages={totalPages} baseParams={{ filter: sp.filter }} />
     </div>
   );
 }

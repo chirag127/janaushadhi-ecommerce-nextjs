@@ -1,39 +1,31 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/insforge/server";
+import { getSessionUser } from "@/lib/db/auth-stub";
+import {
+  dbGetCartItem,
+  dbAddToCart,
+  dbUpdateCartQuantity,
+  dbRemoveFromCart,
+  dbClearCart,
+} from "@/lib/db/repository";
 
 async function requireUser() {
-  const insforge = await createClient();
-  const {
-    data: { user },
-  } = await insforge.auth.getCurrentUser();
-  return { insforge, user };
+  return getSessionUser();
 }
 
 export async function addToCart(productId: string, quantity = 1) {
-  const { insforge, user } = await requireUser();
+  const user = await requireUser();
   if (!user) return { error: "Please sign in to add items to your cart." };
 
-  // Upsert: increment quantity if it already exists.
-  const { data: existing } = await insforge.database
-    .from("cart_items")
-    .select("id, quantity")
-    .eq("user_id", user.id)
-    .eq("product_id", productId)
-    .maybeSingle();
+  const { data: existing, error: fetchErr } = await dbGetCartItem(user.id, productId);
+  if (fetchErr) return { error: fetchErr.message };
 
   if (existing) {
-    const row = existing as { id: string; quantity: number };
-    const { error } = await insforge.database
-      .from("cart_items")
-      .update({ quantity: row.quantity + quantity })
-      .eq("id", row.id);
+    const { error } = await dbUpdateCartQuantity(existing.id, user.id, existing.quantity + quantity);
     if (error) return { error: error.message };
   } else {
-    const { error } = await insforge.database
-      .from("cart_items")
-      .insert([{ user_id: user.id, product_id: productId, quantity }]);
+    const { error } = await dbAddToCart(user.id, productId, quantity);
     if (error) return { error: error.message };
   }
 
@@ -43,16 +35,11 @@ export async function addToCart(productId: string, quantity = 1) {
 }
 
 export async function updateCartQuantity(itemId: string, quantity: number) {
-  const { insforge, user } = await requireUser();
+  const user = await requireUser();
   if (!user) return { error: "Not authenticated" };
-
   if (quantity <= 0) return removeFromCart(itemId);
 
-  const { error } = await insforge.database
-    .from("cart_items")
-    .update({ quantity })
-    .eq("id", itemId)
-    .eq("user_id", user.id);
+  const { error } = await dbUpdateCartQuantity(itemId, user.id, quantity);
   if (error) return { error: error.message };
 
   revalidatePath("/cart");
@@ -60,14 +47,10 @@ export async function updateCartQuantity(itemId: string, quantity: number) {
 }
 
 export async function removeFromCart(itemId: string) {
-  const { insforge, user } = await requireUser();
+  const user = await requireUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { error } = await insforge.database
-    .from("cart_items")
-    .delete()
-    .eq("id", itemId)
-    .eq("user_id", user.id);
+  const { error } = await dbRemoveFromCart(itemId, user.id);
   if (error) return { error: error.message };
 
   revalidatePath("/cart");
@@ -76,13 +59,10 @@ export async function removeFromCart(itemId: string) {
 }
 
 export async function clearCart() {
-  const { insforge, user } = await requireUser();
+  const user = await requireUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { error } = await insforge.database
-    .from("cart_items")
-    .delete()
-    .eq("user_id", user.id);
+  const { error } = await dbClearCart(user.id);
   if (error) return { error: error.message };
 
   revalidatePath("/cart");

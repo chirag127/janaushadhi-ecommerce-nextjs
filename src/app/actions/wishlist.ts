@@ -1,35 +1,28 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/insforge/server";
+import { getSessionUser } from "@/lib/db/auth-stub";
+import {
+  dbGetWishlistItem,
+  dbAddToWishlist,
+  dbRemoveFromWishlist,
+} from "@/lib/db/repository";
 
 export async function toggleWishlist(productId: string) {
-  const insforge = await createClient();
-  const {
-    data: { user },
-  } = await insforge.auth.getCurrentUser();
+  const user = await getSessionUser();
   if (!user) return { error: "Please sign in to use your wishlist." };
 
-  const { data: existing } = await insforge.database
-    .from("wishlist_items")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("product_id", productId)
-    .maybeSingle();
+  const { data: existing, error: fetchErr } = await dbGetWishlistItem(user.id, productId);
+  if (fetchErr) return { error: fetchErr.message };
 
   if (existing) {
-    const { error } = await insforge.database
-      .from("wishlist_items")
-      .delete()
-      .eq("id", (existing as { id: string }).id);
+    const { error } = await dbRemoveFromWishlist(existing.id, user.id);
     if (error) return { error: error.message };
     revalidatePath("/account/wishlist");
     return { success: "Removed from wishlist", inWishlist: false };
   }
 
-  const { error } = await insforge.database
-    .from("wishlist_items")
-    .insert([{ user_id: user.id, product_id: productId }]);
+  const { error } = await dbAddToWishlist(user.id, productId);
   if (error) return { error: error.message };
 
   revalidatePath("/account/wishlist");
@@ -37,17 +30,10 @@ export async function toggleWishlist(productId: string) {
 }
 
 export async function removeFromWishlist(itemId: string) {
-  const insforge = await createClient();
-  const {
-    data: { user },
-  } = await insforge.auth.getCurrentUser();
+  const user = await getSessionUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { error } = await insforge.database
-    .from("wishlist_items")
-    .delete()
-    .eq("id", itemId)
-    .eq("user_id", user.id);
+  const { error } = await dbRemoveFromWishlist(itemId, user.id);
   if (error) return { error: error.message };
 
   revalidatePath("/account/wishlist");

@@ -1,21 +1,23 @@
-import { cookies } from "next/headers";
-import { createAuthActions, createServerClient } from "@insforge/sdk/ssr";
-
 /**
- * Server-side auth-mutation helpers. `createAuthActions()` writes / clears the
- * `insforge_access_token` (browser-readable) and `insforge_refresh_token`
- * (httpOnly) cookies using the Next.js cookie store, so sign-in / sign-up /
- * verify / sign-out flows establish or clear the session correctly.
+ * Auth-actions stub — replaces InsForge createAuthActions / createServerClient.
+ * No-ops until Better Auth is wired.
  */
 export async function createInsForgeAuthActions() {
-  return createAuthActions({ cookies: await cookies() });
+  return {
+    signInWithPassword: async () => ({ data: null, error: { message: "Auth not configured", statusCode: 503 } }),
+    signUp: async () => ({ data: null, error: { message: "Auth not configured" } }),
+    verifyEmail: async () => ({ error: { message: "Auth not configured" } }),
+    signOut: async () => ({}),
+    exchangeOAuthCode: async () => ({ error: { message: "Auth not configured" } }),
+  };
 }
 
-/**
- * Full server client (complete auth surface) for auth reads and for the
- * password-reset flow (`sendResetPasswordEmail` / `resetPassword`), which are
- * not part of the AuthActions surface.
- */
 export async function createInsForgeAuthClient() {
-  return createServerClient({ cookies: await cookies() });
+  return {
+    auth: {
+      signInWithOAuth: async () => ({ data: null, error: { message: "Auth not configured" } }),
+      sendResetPasswordEmail: async () => ({ error: { message: "Auth not configured" } }),
+      resetPassword: async () => ({ error: { message: "Auth not configured" } }),
+    },
+  };
 }

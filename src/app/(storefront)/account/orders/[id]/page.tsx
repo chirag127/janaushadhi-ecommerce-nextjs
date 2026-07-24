@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Package, ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetOrderWithItems } from "@/lib/db/repository";
 import { getUser } from "@/lib/auth";
 import {
   formatPrice,
@@ -20,20 +20,10 @@ export const metadata: Metadata = {
 
 type Params = Promise<{ id: string }>;
 
-export default async function OrderDetailPage({
-  params,
-}: {
-  params: Params;
-}) {
+export default async function OrderDetailPage({ params }: { params: Params }) {
   const { id } = await params;
   const user = await getUser();
-  const insforge = await createClient();
-  const { data } = await insforge.database
-    .from("orders")
-    .select("*, items:order_items(*)")
-    .eq("id", id)
-    .eq("user_id", user!.id)
-    .maybeSingle();
+  const { data } = await dbGetOrderWithItems(id, user!.id);
 
   if (!data) notFound();
   const o = data as Order & { items: OrderItem[] };

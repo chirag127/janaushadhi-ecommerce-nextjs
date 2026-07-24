@@ -4,7 +4,7 @@ import { Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/storefront/product-card";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetWishlistWithProducts } from "@/lib/db/repository";
 import { getUser } from "@/lib/auth";
 import type { Product } from "@/lib/types";
 
@@ -15,14 +15,9 @@ export const metadata: Metadata = {
 
 export default async function WishlistPage() {
   const user = await getUser();
-  const insforge = await createClient();
-  const { data } = await insforge.database
-    .from("wishlist_items")
-    .select("product:products(*)")
-    .eq("user_id", user!.id)
-    .order("created_at", { ascending: false });
+  const { data } = await dbGetWishlistWithProducts(user!.id);
 
-  const products = ((data ?? []) as unknown as { product: Product | null }[])
+  const products = ((data ?? []) as { product: Product }[])
     .map((r) => r.product)
     .filter((p): p is Product => !!p && p.is_active);
 

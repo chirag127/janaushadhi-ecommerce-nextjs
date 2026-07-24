@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/storefront/pagination";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetOrders } from "@/lib/db/repository";
 import { formatPrice, formatDate, orderStatusVariant } from "@/lib/utils";
 import type { Order } from "@/lib/types";
 
@@ -22,17 +22,12 @@ export default async function AdminOrdersPage({
 }) {
   const sp = await searchParams;
   const page = Number(sp.page) || 1;
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
 
-  const insforge = await createClient();
-  let builder = insforge.database
-    .from("orders")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false });
-  if (sp.status) builder = builder.eq("status", sp.status);
-
-  const { data, count } = await builder.range(from, to);
+  const { data, count } = await dbGetOrders({
+    status: sp.status,
+    page,
+    pageSize: PAGE_SIZE,
+  });
   const orders = (data ?? []) as Order[];
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
@@ -41,11 +36,7 @@ export default async function AdminOrdersPage({
       <h1 className="text-2xl font-bold">Orders ({count ?? 0})</h1>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          asChild
-          variant={!sp.status ? "default" : "outline"}
-          size="sm"
-        >
+        <Button asChild variant={!sp.status ? "default" : "outline"} size="sm">
           <Link href="/admin/orders">All</Link>
         </Button>
         {STATUSES.map((s) => (

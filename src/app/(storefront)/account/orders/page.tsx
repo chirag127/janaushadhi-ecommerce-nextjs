@@ -4,23 +4,17 @@ import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetOrders } from "@/lib/db/repository";
 import { getUser } from "@/lib/auth";
 import { formatPrice, formatDate, orderStatusVariant } from "@/lib/utils";
-import type { Order, OrderItem } from "@/lib/types";
+import type { Order } from "@/lib/types";
 
 export const metadata: Metadata = { title: "My Orders", robots: { index: false } };
 
 export default async function OrdersPage() {
   const user = await getUser();
-  const insforge = await createClient();
-  const { data } = await insforge.database
-    .from("orders")
-    .select("*, items:order_items(id)")
-    .eq("user_id", user!.id)
-    .order("created_at", { ascending: false });
-
-  const orders = (data ?? []) as (Order & { items: OrderItem[] })[];
+  const { data } = await dbGetOrders({ userId: user!.id, pageSize: 100 });
+  const orders = (data ?? []) as Order[];
 
   if (orders.length === 0) {
     return (
@@ -52,7 +46,7 @@ export default async function OrdersPage() {
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">
-                {formatDate(o.created_at)} · {o.items.length} item(s)
+                {formatDate(o.created_at)}
               </p>
             </div>
             <div className="flex items-center gap-4">

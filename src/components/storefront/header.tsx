@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Pill, ShoppingCart, Heart, User, LayoutDashboard } from "lucide-react";
-import { createClient } from "@/lib/insforge/server";
+import { getSessionUser } from "@/lib/db/auth-stub";
+import { dbGetProfileField, dbCountCartItems } from "@/lib/db/repository";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -10,27 +11,17 @@ import { UserMenu } from "@/components/storefront/user-menu";
 import { siteConfig } from "@/lib/site";
 
 export async function Header() {
-  const insforge = await createClient();
-  const {
-    data: { user },
-  } = await insforge.auth.getCurrentUser();
+  const user = await getSessionUser();
 
   let cartCount = 0;
   let role: string | null = null;
   if (user) {
-    const [{ count }, { data: profile }] = await Promise.all([
-      insforge.database
-        .from("cart_items")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id),
-      insforge.database
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single(),
+    const [cartCountRes, profileRes] = await Promise.all([
+      dbCountCartItems(user.id),
+      dbGetProfileField(user.id, ["role"]),
     ]);
-    cartCount = count ?? 0;
-    role = (profile as { role?: string } | null)?.role ?? null;
+    cartCount = cartCountRes.count ?? 0;
+    role = profileRes.data?.role ?? null;
   }
 
   return (

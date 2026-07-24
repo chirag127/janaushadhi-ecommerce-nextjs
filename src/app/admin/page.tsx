@@ -9,57 +9,47 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/insforge/server";
+import {
+  dbCountProducts,
+  dbCountOrders,
+  dbCountProfiles,
+  dbGetAllOrderTotals,
+  dbGetOrders,
+} from "@/lib/db/repository";
 import { formatPrice, formatDate, orderStatusVariant } from "@/lib/utils";
 import type { Order } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Admin Dashboard" };
 
 export default async function AdminDashboardPage() {
-  const insforge = await createClient();
-
   const [
-    productCount,
-    orderCount,
-    userCount,
-    lowStock,
+    productCountRes,
+    orderCountRes,
+    userCountRes,
+    lowStockRes,
     recentOrdersRes,
-    allOrdersRes,
+    allOrderTotalsRes,
   ] = await Promise.all([
-    insforge.database.from("products").select("id", { count: "exact", head: true }),
-    insforge.database.from("orders").select("id", { count: "exact", head: true }),
-    insforge.database.from("profiles").select("id", { count: "exact", head: true }),
-    insforge.database
-      .from("products")
-      .select("id", { count: "exact", head: true })
-      .lte("stock", 10),
-    insforge.database
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(5),
-    insforge.database.from("orders").select("total, status"),
+    dbCountProducts(),
+    dbCountOrders(),
+    dbCountProfiles(),
+    dbCountProducts(10),
+    dbGetOrders({ pageSize: 5 }),
+    dbGetAllOrderTotals(),
   ]);
 
-  const allOrders = (allOrdersRes.data ?? []) as Pick<
-    Order,
-    "total" | "status"
-  >[];
+  const allOrders = allOrderTotalsRes.data ?? [];
   const revenue = allOrders
     .filter((o) => o.status !== "cancelled")
-    .reduce((s, o) => s + Number(o.total), 0);
+    .reduce((s, o) => s + o.total, 0);
 
   const recentOrders = (recentOrdersRes.data ?? []) as Order[];
 
   const stats = [
-    {
-      label: "Revenue",
-      value: formatPrice(revenue),
-      icon: IndianRupee,
-    },
-    { label: "Orders", value: orderCount.count ?? 0, icon: ShoppingBag },
-    { label: "Products", value: productCount.count ?? 0, icon: Package },
-    { label: "Customers", value: userCount.count ?? 0, icon: Users },
+    { label: "Revenue", value: formatPrice(revenue), icon: IndianRupee },
+    { label: "Orders", value: orderCountRes.count ?? 0, icon: ShoppingBag },
+    { label: "Products", value: productCountRes.count ?? 0, icon: Package },
+    { label: "Customers", value: userCountRes.count ?? 0, icon: Users },
   ];
 
   return (
@@ -82,12 +72,12 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      {(lowStock.count ?? 0) > 0 && (
+      {(lowStockRes.count ?? 0) > 0 && (
         <Card className="border-amber-500/50 bg-amber-500/5">
           <CardContent className="flex items-center gap-3 pt-6">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
             <p className="text-sm">
-              <strong>{lowStock.count}</strong> product(s) are low on stock.{" "}
+              <strong>{lowStockRes.count}</strong> product(s) are low on stock.{" "}
               <Link href="/admin/inventory" className="text-primary underline">
                 Manage inventory
               </Link>
@@ -99,18 +89,13 @@ export default async function AdminDashboardPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Orders</CardTitle>
-          <Link
-            href="/admin/orders"
-            className="text-sm text-primary hover:underline"
-          >
+          <Link href="/admin/orders" className="text-sm text-primary hover:underline">
             View all
           </Link>
         </CardHeader>
         <CardContent>
           {recentOrders.length === 0 ? (
-            <p className="py-4 text-center text-muted-foreground">
-              No orders yet.
-            </p>
+            <p className="py-4 text-center text-muted-foreground">No orders yet.</p>
           ) : (
             <div className="divide-y">
               {recentOrders.map((o) => (
@@ -126,15 +111,10 @@ export default async function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge
-                      variant={orderStatusVariant(o.status)}
-                      className="capitalize"
-                    >
+                    <Badge variant={orderStatusVariant(o.status)} className="capitalize">
                       {o.status}
                     </Badge>
-                    <span className="font-semibold">
-                      {formatPrice(o.total)}
-                    </span>
+                    <span className="font-semibold">{formatPrice(o.total)}</span>
                   </div>
                 </Link>
               ))}

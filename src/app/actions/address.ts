@@ -1,14 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/insforge/server";
+import { getSessionUser } from "@/lib/db/auth-stub";
+import {
+  dbClearDefaultAddresses,
+  dbUpsertAddress,
+  dbDeleteAddress,
+} from "@/lib/db/repository";
 import { addressSchema } from "@/lib/validations";
 
 export async function saveAddress(_prev: unknown, formData: FormData) {
-  const insforge = await createClient();
-  const {
-    data: { user },
-  } = await insforge.auth.getCurrentUser();
+  const user = await getSessionUser();
   if (!user) return { error: "Not authenticated" };
 
   const parsed = addressSchema.safeParse({
@@ -25,27 +27,19 @@ export async function saveAddress(_prev: unknown, formData: FormData) {
 
   const id = formData.get("id") as string | null;
 
-  // If setting default, clear others first.
   if (parsed.data.is_default) {
-    await insforge.database
-      .from("addresses")
-      .update({ is_default: false })
-      .eq("user_id", user.id);
+    const { error } = await dbClearDefaultAddresses(user.id);
+    if (error) return { error: error.message };
   }
 
-  if (id) {
-    const { error } = await insforge.database
-      .from("addresses")
-      .update(parsed.data)
-      .eq("id", id)
-      .eq("user_id", user.id);
-    if (error) return { error: error.message };
-  } else {
-    const { error } = await insforge.database
-      .from("addresses")
-      .insert([{ ...parsed.data, user_id: user.id }]);
-    if (error) return { error: error.message };
-  }
+  const { error } = await dbUpsertAddress({
+    id,
+    user_id: user.id,
+    ...parsed.data,
+    line2: parsed.data.line2 ?? null,
+    is_default: parsed.data.is_default ?? false,
+  });
+  if (error) return { error: error.message };
 
   revalidatePath("/account/addresses");
   revalidatePath("/checkout");
@@ -53,17 +47,10 @@ export async function saveAddress(_prev: unknown, formData: FormData) {
 }
 
 export async function deleteAddress(id: string) {
-  const insforge = await createClient();
-  const {
-    data: { user },
-  } = await insforge.auth.getCurrentUser();
+  const user = await getSessionUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { error } = await insforge.database
-    .from("addresses")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
+  const { error } = await dbDeleteAddress(id, user.id);
   if (error) return { error: error.message };
 
   revalidatePath("/account/addresses");

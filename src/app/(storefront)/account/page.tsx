@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Package, MapPin, Heart, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetProfileField, dbGetRecentOrders, dbCountOrders, dbCountAddresses, dbCountWishlistItems } from "@/lib/db/repository";
 import { getUser } from "@/lib/auth";
 import { formatPrice, formatDate } from "@/lib/utils";
 import type { Order } from "@/lib/types";
@@ -11,41 +11,26 @@ export const metadata: Metadata = { title: "Dashboard", robots: { index: false }
 
 export default async function AccountDashboardPage() {
   const user = await getUser();
-  const insforge = await createClient();
 
-  const [{ data: profile }, ordersRes, addrCount, wishCount] =
+  const [profileRes, recentOrdersData, totalOrdersData, addrCountData, wishCountData] =
     await Promise.all([
-      insforge.database
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user!.id)
-        .single(),
-      insforge.database
-        .from("orders")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(3),
-      insforge.database
-        .from("addresses")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user!.id),
-      insforge.database
-        .from("wishlist_items")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user!.id),
+      dbGetProfileField(user!.id, ["full_name"]),
+      dbGetRecentOrders(user!.id, 3),
+      dbCountOrders(user!.id),
+      dbCountAddresses(user!.id),
+      dbCountWishlistItems(user!.id),
     ]);
 
-  const orders = (ordersRes.data ?? []) as Order[];
-  const { count: totalOrders } = await insforge.database
-    .from("orders")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user!.id);
+  const profile = profileRes.data;
+  const orders = (recentOrdersData.data ?? []) as Order[];
+  const totalOrders = totalOrdersData.count ?? 0;
+  const addrCount = addrCountData.count ?? 0;
+  const wishCount = wishCountData.count ?? 0;
 
   const stats = [
-    { label: "Orders", value: totalOrders ?? 0, icon: Package, href: "/account/orders" },
-    { label: "Addresses", value: addrCount.count ?? 0, icon: MapPin, href: "/account/addresses" },
-    { label: "Wishlist", value: wishCount.count ?? 0, icon: Heart, href: "/account/wishlist" },
+    { label: "Orders", value: totalOrders, icon: Package, href: "/account/orders" },
+    { label: "Addresses", value: addrCount, icon: MapPin, href: "/account/addresses" },
+    { label: "Wishlist", value: wishCount, icon: Heart, href: "/account/wishlist" },
   ];
 
   return (

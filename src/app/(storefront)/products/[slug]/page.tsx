@@ -19,6 +19,7 @@ import { getProductReviews } from "@/lib/reviews";
 import { getUser } from "@/lib/auth";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { siteConfig } from "@/lib/site";
+import type { ProductWithCategory } from "@/lib/types";
 
 type Params = Promise<{ slug: string }>;
 
@@ -50,10 +51,11 @@ export default async function ProductDetailPage({
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product || !product.is_active) notFound();
+  const p = product as ProductWithCategory;
 
   const [reviews, related, wishlist, user] = await Promise.all([
-    getProductReviews(product.id),
-    getRelatedProducts(product.category_id, product.id, 4),
+    getProductReviews(p.id),
+    getRelatedProducts(p.category_id, p.id, 4),
     getWishlistIds(),
     getUser(),
   ]);
@@ -62,19 +64,19 @@ export default async function ProductDetailPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: product.name,
-    description: product.description ?? undefined,
-    image: product.image_url ?? undefined,
-    sku: product.drug_code,
+    name: p.name,
+    description: p.description ?? undefined,
+    image: p.image_url ?? undefined,
+    sku: p.drug_code,
     offers: {
       "@type": "Offer",
       priceCurrency: "INR",
-      price: product.mrp,
+      price: p.mrp,
       availability:
-        product.stock > 0
+        p.stock > 0
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
-      url: `${siteConfig.url}/products/${product.slug}`,
+      url: `${siteConfig.url}/products/${p.slug}`,
     },
     aggregateRating:
       reviews.count > 0
@@ -98,14 +100,14 @@ export default async function ProductDetailPage({
         <Link href="/" className="hover:text-primary">Home</Link>
         <ChevronRight className="h-3 w-3" />
         <Link href="/products" className="hover:text-primary">Products</Link>
-        {product.category && (
+        {p.category && (
           <>
             <ChevronRight className="h-3 w-3" />
             <Link
-              href={`/products?category=${product.category.slug}`}
+              href={`/products?category=${p.category.slug}`}
               className="hover:text-primary"
             >
-              {product.category.name}
+              {p.category.name}
             </Link>
           </>
         )}
@@ -114,10 +116,10 @@ export default async function ProductDetailPage({
       <div className="grid gap-8 md:grid-cols-2">
         {/* Image */}
         <div className="relative aspect-square overflow-hidden rounded-lg border bg-muted">
-          {product.image_url ? (
+          {p.image_url ? (
             <Image
-              src={product.image_url}
-              alt={product.name}
+              src={p.image_url}
+              alt={p.name}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
@@ -133,14 +135,14 @@ export default async function ProductDetailPage({
         {/* Info */}
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            {product.is_featured && <Badge variant="accent">Featured</Badge>}
-            {product.category && (
-              <Badge variant="secondary">{product.category.name}</Badge>
+            {p.is_featured && <Badge variant="accent">Featured</Badge>}
+            {p.category && (
+              <Badge variant="secondary">{p.category.name}</Badge>
             )}
-            <Badge variant="outline">#{product.drug_code}</Badge>
+            <Badge variant="outline">#{p.drug_code}</Badge>
           </div>
 
-          <h1 className="text-3xl font-bold">{product.name}</h1>
+          <h1 className="text-3xl font-bold">{p.name}</h1>
 
           <div className="flex items-center gap-2">
             <RatingStars value={reviews.average} />
@@ -151,47 +153,47 @@ export default async function ProductDetailPage({
             </span>
           </div>
 
-          {!product.price || product.price <= 0 ? (
+          {!p.price || p.price <= 0 ? (
             <p className="text-2xl font-bold text-primary">Available on request</p>
           ) : (
             <p className="text-3xl font-bold text-primary">
-              {formatPrice(product.price)}
+              {formatPrice(p.price)}
             </p>
           )}
 
-          {product.unit_size && (
+          {p.unit_size && (
             <p className="text-sm text-muted-foreground">
-              Pack size: <span className="font-medium">{product.unit_size}</span>
+              Pack size: <span className="font-medium">{p.unit_size}</span>
             </p>
           )}
 
           <p>
-            {product.stock > 0 ? (
-              <Badge variant="success">In stock ({product.stock})</Badge>
+            {p.stock > 0 ? (
+              <Badge variant="success">In stock ({p.stock})</Badge>
             ) : (
               <Badge variant="destructive">Out of stock</Badge>
             )}
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            {!product.price || product.price <= 0 ? (
+            {!p.price || p.price <= 0 ? (
               <Link
-                href={`/contact?product=${encodeURIComponent(product.name)}`}
+                href={`/contact?product=${encodeURIComponent(p.name)}`}
                 className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Request this medicine
               </Link>
             ) : (
               <ProductPurchase
-                productId={product.id}
+                productId={p.id}
                 isAuthed={isAuthed}
-                maxStock={product.stock}
+                maxStock={p.stock}
               />
             )}
             <WishlistButton
-              productId={product.id}
+              productId={p.id}
               isAuthed={isAuthed}
-              initialInWishlist={wishlist.has(product.id)}
+              initialInWishlist={wishlist.has(p.id)}
               size="default"
             />
           </div>
@@ -210,11 +212,11 @@ export default async function ProductDetailPage({
       </div>
 
       {/* Description */}
-      {product.description && (
+      {p.description && (
         <section className="mt-10">
           <h2 className="mb-3 text-xl font-bold">Description</h2>
           <p className="whitespace-pre-line text-muted-foreground">
-            {product.description}
+            {p.description}
           </p>
         </section>
       )}
@@ -257,7 +259,7 @@ export default async function ProductDetailPage({
               {reviews.userReview ? "Update your review" : "Write a review"}
             </h3>
             <ReviewForm
-              productId={product.id}
+              productId={p.id}
               isAuthed={isAuthed}
               initialRating={reviews.userReview?.rating ?? 0}
               initialComment={reviews.userReview?.comment ?? ""}
@@ -271,12 +273,12 @@ export default async function ProductDetailPage({
         <section className="mt-12">
           <h2 className="mb-4 text-xl font-bold">Related Products</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {related.map((p) => (
+            {related.map((rp) => (
               <ProductCard
-                key={p.id}
-                product={p}
+                key={rp.id}
+                product={rp}
                 isAuthed={isAuthed}
-                inWishlist={wishlist.has(p.id)}
+                inWishlist={wishlist.has(rp.id)}
               />
             ))}
           </div>

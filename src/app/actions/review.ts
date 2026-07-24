@@ -1,14 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/insforge/server";
+import { getSessionUser } from "@/lib/db/auth-stub";
+import { dbUpsertReview, dbDeleteReview } from "@/lib/db/repository";
 import { reviewSchema } from "@/lib/validations";
 
 export async function submitReview(_prev: unknown, formData: FormData) {
-  const insforge = await createClient();
-  const {
-    data: { user },
-  } = await insforge.auth.getCurrentUser();
+  const user = await getSessionUser();
   if (!user) return { error: "Please sign in to leave a review." };
 
   const parsed = reviewSchema.safeParse({
@@ -18,17 +16,12 @@ export async function submitReview(_prev: unknown, formData: FormData) {
   });
   if (!parsed.success) return { error: parsed.error.errors[0].message };
 
-  const { error } = await insforge.database.from("reviews").upsert(
-    [
-      {
-        product_id: parsed.data.product_id,
-        user_id: user.id,
-        rating: parsed.data.rating,
-        comment: parsed.data.comment ?? null,
-      },
-    ],
-    { onConflict: "product_id,user_id" }
-  );
+  const { error } = await dbUpsertReview({
+    product_id: parsed.data.product_id,
+    user_id: user.id,
+    rating: parsed.data.rating,
+    comment: parsed.data.comment ?? null,
+  });
   if (error) return { error: error.message };
 
   revalidatePath("/products");
@@ -36,17 +29,10 @@ export async function submitReview(_prev: unknown, formData: FormData) {
 }
 
 export async function deleteReview(reviewId: string, productSlug: string) {
-  const insforge = await createClient();
-  const {
-    data: { user },
-  } = await insforge.auth.getCurrentUser();
+  const user = await getSessionUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { error } = await insforge.database
-    .from("reviews")
-    .delete()
-    .eq("id", reviewId)
-    .eq("user_id", user.id);
+  const { error } = await dbDeleteReview(reviewId, user.id);
   if (error) return { error: error.message };
 
   revalidatePath(`/products/${productSlug}`);

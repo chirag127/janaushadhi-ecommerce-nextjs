@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CheckoutForm } from "@/components/storefront/checkout-form";
-import { createClient } from "@/lib/insforge/server";
+import { dbGetAddresses } from "@/lib/db/repository";
 import { getCart } from "@/lib/cart";
 import { getUser } from "@/lib/auth";
 import type { Address } from "@/lib/types";
@@ -17,13 +17,7 @@ export default async function CheckoutPage() {
   const { items, subtotal, shipping } = await getCart();
   if (items.length === 0) redirect("/cart");
 
-  const insforge = await createClient();
-  const { data: addresses } = await insforge.database
-    .from("addresses")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("is_default", { ascending: false })
-    .order("created_at", { ascending: false });
+  const { data: addresses } = await dbGetAddresses(user.id);
 
   return (
     <div className="container py-8">
