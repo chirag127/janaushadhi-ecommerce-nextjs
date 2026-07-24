@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Package } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
@@ -35,9 +34,13 @@ export function ProductCard({
             className="object-cover transition-transform group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
-            <Package className="h-16 w-16" />
-          </div>
+          <Image
+            src="/placeholder-product.svg"
+            alt="Product image placeholder"
+            fill
+            sizes="(max-width: 768px) 50vw, 25vw"
+            className="object-contain p-4"
+          />
         )}
         {product.is_featured && (
           <Badge variant="accent" className="absolute left-2 top-2">

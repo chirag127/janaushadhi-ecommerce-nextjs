@@ -1,0 +1,84 @@
+name: Test
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  unit:
+    name: Unit tests (vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm test
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost/fake"
+
+  typecheck:
+    name: Type check (tsc --noEmit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm type-check
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost/fake"
+          NEON_AUTH_BASE_URL: "https://fake.neon.tech"
+          NEON_AUTH_COOKIE_SECRET: "fake-secret-32-chars-long-padding!!"
+          NEXT_PUBLIC_SITE_URL: "https://janaushadhi-nextjs.oriz.in"
+
+  e2e:
+    name: E2E tests (Playwright)
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEON_AUTH_BASE_URL: ${{ secrets.NEON_AUTH_BASE_URL }}
+      NEON_AUTH_COOKIE_SECRET: ${{ secrets.NEON_AUTH_COOKIE_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Write env
+        run: |
+          {
+            echo "DATABASE_URL=${DATABASE_URL}"
+            echo "NEON_AUTH_BASE_URL=${NEON_AUTH_BASE_URL}"
+            echo "NEON_AUTH_COOKIE_SECRET=${NEON_AUTH_COOKIE_SECRET}"
+          } > .env.local
+      - name: Start Next.js dev server
+        run: pnpm dev &
+        env:
+          PORT: 3000
+          NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
+      - name: Wait for server
+        run: pnpm exec wait-on http://localhost:3000 --timeout 60000
+      - name: Run E2E tests
+        run: pnpm test:e2e
+        env:
+          BASE_URL: http://localhost:3000
+          CI_SERVER: "1"

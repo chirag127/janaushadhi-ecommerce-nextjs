@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Package, ShieldCheck, Truck, ChevronRight } from "lucide-react";
+import { ShieldCheck, Truck, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { RatingStars } from "@/components/storefront/rating-stars";
@@ -126,9 +126,13 @@ export default async function ProductDetailPage({
               priority
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
-              <Package className="h-24 w-24" />
-            </div>
+            <Image
+              src="/placeholder-product.svg"
+              alt="Product image placeholder"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-contain p-8"
+            />
           )}
         </div>
 

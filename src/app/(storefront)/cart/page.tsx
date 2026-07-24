@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { Package, ShoppingCart, ArrowRight } from "lucide-react";
+import { ShoppingCart, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CartItemControls } from "@/components/storefront/cart-item-controls";
@@ -62,9 +62,13 @@ export default async function CartPage() {
                     className="object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
-                    <Package className="h-8 w-8" />
-                  </div>
+                  <Image
+                    src="/placeholder-product.svg"
+                    alt="Product image placeholder"
+                    fill
+                    sizes="80px"
+                    className="object-contain p-2"
+                  />
                 )}
               </Link>
               <div className="flex flex-1 flex-col justify-between">
