@@ -69,3 +69,10 @@ export type AddressInput = z.infer<typeof addressSchema>;
 export type ProductInput = z.infer<typeof productSchema>;
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type CouponInput = z.infer<typeof couponSchema>;
+
+export const contactSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Valid email required"),
+  message: z.string().min(5, "Please enter a message"),
+});
+export type ContactInput = z.infer<typeof contactSchema>;

@@ -19,6 +19,7 @@ import {
   orders,
   order_items,
   reviews,
+  contact_messages,
 } from "./schema";
 import { eq, and, ilike, gte, lte, gt, ne, asc, desc, count as sqlCount, sql } from "drizzle-orm";
 import type {
@@ -1094,5 +1095,18 @@ export async function dbDeleteCategory(id: string) {
     return ok(null);
   } catch (e) {
     return err(String(e));
+  }
+}
+
+export async function dbCreateContactMessage(payload: {
+  name: string;
+  email: string;
+  message: string;
+}) {
+  try {
+    const [row] = await db.insert(contact_messages).values(payload).returning();
+    return { data: row, error: null };
+  } catch (e) {
+    return { data: null, error: e as Error };
   }
 }
