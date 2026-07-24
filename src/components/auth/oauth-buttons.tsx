@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
-import { startOAuth } from "@/app/actions/auth";
+import { authClient } from "@/lib/auth-client";
 
 const PROVIDERS = [
   { key: "google", label: "Google" },
@@ -18,11 +18,12 @@ export function OAuthButtons() {
   async function signInWith(provider: string) {
     setError("");
     setPending(provider);
-    const res = await startOAuth(provider, next);
-    if (res.url) {
-      window.location.href = res.url;
-    } else {
-      setError(res.error ?? "OAuth failed");
+    try {
+      const callbackURL =
+        (typeof window !== "undefined" ? window.location.origin : "") + next;
+      await authClient.signIn.social({ provider, callbackURL });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "OAuth failed");
       setPending("");
     }
   }
