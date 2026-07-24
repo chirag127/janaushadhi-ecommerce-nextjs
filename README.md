@@ -1,69 +1,77 @@
-# Jan Aushadhi Ecommerce (Next.js)
+# janaushadhi-ecommerce-nextjs
 
-A full-stack, production-ready ecommerce storefront for affordable generic
-medicines, built with **Next.js 15 (App Router)**, **InsForge**
-(Postgres + Auth + Storage + RLS + managed Razorpay payments), **TypeScript**,
-and **Tailwind CSS**.
+[![GitHub stars](https://img.shields.io/github/stars/chirag127/janaushadhi-ecommerce-nextjs?style=flat)](https://github.com/chirag127/janaushadhi-ecommerce-nextjs/stargazers)
 
-One of the four-framework Jan Aushadhi build (astro / nextjs / laravel /
-wordpress), all backed by one shared InsForge project `janaushadhi-shared`.
+**Live:** https://janaushadhi-nextjs.oriz.in
+
+Jan Aushadhi generic-medicine e-commerce storefront built with Next.js 15, deployed on Cloudflare Workers via OpenNext.
+
+One of four framework variants (astro / nextjs / laravel / wordpress) sharing one Neon Postgres project `janaushadhi`.
 
 ## Features
 
-### Storefront
-- Landing page (hero, value props, categories, featured products)
-- Catalog with search, category filter, price range, sorting, pagination
-- Product detail (image, stock, related products, reviews, JSON-LD)
-- Cart with quantity controls + free-shipping progress
-- Checkout with saved addresses, coupon codes, Razorpay / COD
-- Order confirmation + order history, wishlist, dark/light/system theme
+**Storefront:** landing page, product catalog (search, category filter, price range, sort, pagination), product detail (reviews, related products, JSON-LD), cart with free-shipping progress, checkout (saved addresses + coupon codes + Razorpay / COD), order confirmation, order history, wishlist, dark/light/system theme.
 
-### Account
-- Dashboard (order/address/wishlist counts), orders, address book (CRUD),
-  wishlist, profile
+**Account:** dashboard (order/address/wishlist counts), orders, address book (CRUD), wishlist, profile.
 
-### Admin (`role = admin`)
-- Dashboard (revenue, orders, products, customers, low-stock)
-- Products CRUD, categories, coupons (percent/fixed, min order, usage/expiry),
-  orders + status, inventory
+**Admin (`role = admin`):** dashboard (revenue, orders, products, customers, low-stock), products CRUD, categories, coupons (percent/fixed, min order, usage limit, expiry), orders + status management, inventory.
 
-### Platform
-- SSR auth (email/password + OAuth callback), middleware session refresh +
-  route guards (`/account`, `/checkout`, `/admin`), RLS on every table, Server
-  Actions for all mutations, `sitemap.xml` / `robots.txt`
+**Platform:** SSR auth (email/password + OAuth), middleware session refresh + route guards (`/account`, `/checkout`, `/admin`), Server Actions for all mutations, `sitemap.xml`, `robots.txt`.
 
-## Setup
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 15 (App Router, SSR) |
+| Deployment | OpenNext (`@opennextjs/cloudflare`) → Cloudflare Workers |
+| Database | Neon Postgres + Drizzle ORM |
+| Auth | Neon Managed Better Auth (`@neondatabase/auth`) |
+| Payments | Razorpay (test mode) |
+| Styling | Tailwind CSS v3, `next-themes`, Lucide icons |
+| Language | TypeScript 5 |
+
+## Local Development
 
 ```bash
-npm install
-cp .env.example .env.local   # fill InsForge URL + anon key
-npm run dev                  # http://localhost:3000
-npm run build
-npm run type-check
+pnpm install
+cp .env.example .env.local   # fill in values — see Environment Variables below
+pnpm dev                     # http://localhost:3000
 ```
 
-Env values (`.env.local`):
-
-- `NEXT_PUBLIC_INSFORGE_URL` = `oss_host` from `.insforge/project.json`
-- `NEXT_PUBLIC_INSFORGE_ANON_KEY` = `npx @insforge/cli secrets get ANON_KEY`
-  (RLS-protected — safe in browser)
-- `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` = site origin
-- `NEXT_PUBLIC_RAZORPAY_TEST_MODE` = `"true"` (test) / `"false"` (live)
-
-## Razorpay
-
-Configured on the InsForge backend (keys not in env):
+Other scripts:
 
 ```bash
-npx @insforge/cli payments razorpay config set --environment test \
-  --key-id rzp_test_xxx --key-secret xxx
+pnpm build        # production build via opennext
+pnpm lint         # ESLint
+pnpm type-check   # tsc --noEmit
 ```
 
-Until configured, checkout places orders as Cash-on-Delivery.
+## Deployment
 
-## Backend
+Deploys automatically on push to `main` via GitHub Actions (`.github/workflows/deploy.yml`):
 
-Shared InsForge project. Schema (13 tables, RLS, enums `discount_type`
-`percent|fixed`, `order_status`, `payment_status`, `user_role`) + 2,439-medicine
-catalog live in the project. `orders.shipping_address` is jsonb (address snapshot
-+ `_payment_method`); coupons use `max_discount_amount` / `min_order_amount`.
+1. Builds with `opennextjs-cloudflare build`
+2. Deploys with `wrangler deploy` → Cloudflare Workers
+3. Pushes runtime secrets to the Worker via `wrangler secret put`
+
+Required GitHub secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, plus the env vars listed below.
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in values. Never commit secret values.
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Neon pooled connection string for `janaushadhi` project |
+| `DATABASE_URL_UNPOOLED` | Neon direct connection string (used by migrations) |
+| `NEON_AUTH_BASE_URL` | Base URL of the Neon Managed Better Auth endpoint (oriz-accounts hub) |
+| `NEON_AUTH_COOKIE_SECRET` | Cookie signing secret, min 32 chars (`openssl rand -base64 32`) |
+| `NEXT_PUBLIC_SITE_URL` | Public site origin used for SEO metadata, sitemap, and OAuth redirects |
+| `NEXT_PUBLIC_APP_URL` | Same as `NEXT_PUBLIC_SITE_URL` (used internally by some components) |
+| `NEXT_PUBLIC_RAZORPAY_TEST_MODE` | `"true"` keeps Razorpay Checkout in test mode; `"false"` for live |
+| `RAZORPAY_KEY_ID` | Razorpay API key ID (set as Worker secret in production) |
+| `RAZORPAY_KEY_SECRET` | Razorpay API key secret (set as Worker secret in production) |
+
+## License
+
+MIT
