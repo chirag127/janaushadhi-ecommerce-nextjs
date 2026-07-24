@@ -16,6 +16,7 @@ jobs:
       NEON_AUTH_COOKIE_SECRET: ${{ secrets.NEON_AUTH_COOKIE_SECRET }}
       RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
       RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
+      NEXT_PUBLIC_SITE_URL: https://janaushadhi-nextjs.oriz.in
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
