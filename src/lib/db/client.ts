@@ -8,5 +8,19 @@ function getDb() {
   return drizzle(neon(url), { schema });
 }
 
-// Singleton for serverless (each request = new cold start on CF Workers/Vercel edge)
-export const db = getDb();
+// Lazy singleton. On Cloudflare Workers env vars are NOT available at module
+// top-level (only inside a request), so we must defer getDb() to first use.
+// A Proxy keeps the existing `db.select(...)` call sites working unchanged.
+type DrizzleDb = ReturnType<typeof getDb>;
+let _db: DrizzleDb | null = null;
+function resolveDb(): DrizzleDb {
+  if (!_db) _db = getDb();
+  return _db;
+}
+export const db = new Proxy({} as DrizzleDb, {
+  get(_t, prop) {
+    const real = resolveDb() as unknown as Record<string | symbol, unknown>;
+    const v = real[prop];
+    return typeof v === "function" ? v.bind(real) : v;
+  },
+});
