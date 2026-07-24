@@ -138,7 +138,7 @@ test.describe("/contact", () => {
   test("contact form is visible", async ({ page }) => {
     skipIfNoServer();
     await page.goto("/contact");
-    await expect(page.locator("form")).toBeVisible();
+    await expect(page.locator("form").first()).toBeVisible();
   });
 
   test("name, email, message fields present", async ({ page }) => {
@@ -153,7 +153,7 @@ test.describe("/contact", () => {
     skipIfNoServer();
     await page.goto("/contact?product=Paracetamol%20500mg");
     // Page should still load without error
-    await expect(page.locator("form")).toBeVisible();
+    await expect(page.locator("form").first()).toBeVisible();
   });
 });
 
