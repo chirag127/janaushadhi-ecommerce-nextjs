@@ -44,11 +44,24 @@ jobs:
           NEON_AUTH_COOKIE_SECRET: "fake-secret-32-chars-long-padding!!"
           NEXT_PUBLIC_SITE_URL: "https://janaushadhi-nextjs.oriz.in"
 
+  check-secrets:
+    name: Check E2E secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has-db: ${{ steps.check.outputs.has-db }}
+    steps:
+      - id: check
+        # secrets are not allowed in job-level `if:`; expose availability as an output instead
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: echo "has-db=${{ env.DATABASE_URL != '' }}" >> "$GITHUB_OUTPUT"
+
   e2e:
     name: E2E tests (Playwright)
     runs-on: ubuntu-latest
     # Only run when DATABASE_URL secret is available (skips in forks / public CI)
-    if: ${{ secrets.DATABASE_URL != '' }}
+    needs: check-secrets
+    if: ${{ needs.check-secrets.outputs.has-db == 'true' }}
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       NEON_AUTH_BASE_URL: ${{ secrets.NEON_AUTH_BASE_URL }}
